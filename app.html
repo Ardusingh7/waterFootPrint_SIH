@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Object Detection with TensorFlow.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #1b5e20;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        input[type="file"] {
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: 2px solid #004d40;
+            background-color: #ffffff;
+            color: #004d40;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+
+        input[type="file"]:hover {
+            background-color: #004d40;
+            color: #ffffff;
+        }
+
+        canvas {
+            border-radius: 20px;
+            margin-top: 30px;
+            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        #confirm-section {
+            display: none;
+            margin-top: 30px;
+            gap: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #004d40;
+        }
+
+        #no-options {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        #no-options button {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 15px;
+        }
+
+        #name-input-section {
+            display: none;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        #name-input-section input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 30px;
+            border: 2px solid #004d40;
+            outline: none;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 15px;
+        }
+
+        #name-input-section input:focus {
+            border-color: #00796b;
+        }
+
+        label {
+            font-size: 18px;
+            color: #004d40;
+            font-weight: 500;
+        }
+
+        #water-data {
+            font-size: 20px;
+            color: #1b5e20;
+            font-weight: 600;
+        }
+
+        #error-message {
+            font-size: 18px;
+            color: #d32f2f;
+            margin-top: 15px;
+        }
+
+        #water-section {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Water Footprint Detection</h1>
+    <input type="file" accept="image/*" onchange="loadImage(event)">
+    <canvas id="canvas"></canvas>
+
+    <div id="confirm-section" style="display: none;">
+        <button onclick="yesConfirm()">Yes</button>
+        <button onclick="showNoOptions()">No</button>
+    </div>
+
+    <!-- Input section for the image name -->
+    <div id="name-input-section">
+        <label for="image-name">Enter Image Name to Retrieve Water Footprint:</label>
+        <input type="text" id="image-name" placeholder="Enter image name">
+        <button onclick="retrieveWaterFootprint()">Retrieve Water Footprint</button>
+    </div>
+
+    <div id="no-options">
+        <button onclick="rejectImage()">Upload New Image</button>
+        <button onclick="updateDatabase()">Update Water Footprint Data</button>
+    </div>
+
+    <div id="water-section">
+        <p id="water-data"></p>
+        <p id="error-message"></p>
+    </div>
+    
+    <script>
+        let model;
+
+        // Load COCO-SSD model when the page loads
+        async function loadModel() {
+            model = await cocoSsd.load();
+            console.log("Model loaded successfully");
+        }
+
+        // Load and display the uploaded image
+        function loadImage(event) {
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            const reader = new FileReader();
+
+            reader.onload = function () {
+                const img = new Image();
+                img.onload = function () {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0, img.width, img.height);
+
+                    // Run object detection on the image
+                    detectObjects(img);
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        // Detect objects in the image
+        async function detectObjects(img) {
+            const predictions = await model.detect(img);
+            const context = document.getElementById('canvas').getContext('2d');
+
+            predictions.forEach(prediction => {
+                const [x, y, width, height] = prediction.bbox;
+
+                // Draw bounding box
+                context.beginPath();
+                context.rect(x - 2, y - 2, width + 4, height + 4);
+                context.lineWidth = 3;
+                context.strokeStyle = 'red';
+                context.stroke();
+
+                // Draw label
+                context.font = '20px Arial';
+                context.fillStyle = 'red';
+                const text = `${prediction.class} ${Math.round(prediction.score * 100)}%`;
+                context.fillText(text, x, y > 20 ? y - 10 : y + 20);
+            });
+
+            document.getElementById('confirm-section').style.display = 'flex';
+        }
+
+        // Confirm 'Yes' action to enter image name for water footprint retrieval
+        function yesConfirm() {
+            document.getElementById('confirm-section').style.display = 'none';
+            document.getElementById('name-input-section').style.display = 'block';
+        }
+
+        // Retrieve water footprint data based on image name entered by the user
+        function retrieveWaterFootprint() {
+            const objectName = document.getElementById('image-name').value.trim();
+
+            if (objectName) {
+                const waterFootprintData = { 'Sample Object': 1000 }; // Mock data for demonstration
+
+                if (waterFootprintData[objectName]) {
+                    document.getElementById('water-data').textContent = `Water Footprint: ${waterFootprintData[objectName]} liters`;
+                    document.getElementById('error-message').textContent = '';
+                } else {
+                    document.getElementById('water-data').textContent = '';
+                    document.getElementById('error-message').textContent = `No water footprint data found for "${objectName}".`;
+                }
+
+                document.getElementById('water-section').style.display = 'block';
+            } else {
+                alert('Please enter an image name.');
+            }
+        }
+
+        // Show options when "No" is selected
+        function showNoOptions() {
+            document.getElementById('confirm-section').style.display = 'none';
+            document.getElementById('no-options').style.display = 'flex';
+        }
+
+        // Function to reject and upload a new image
+        function rejectImage() {
+            document.getElementById('no-options').style.display = 'none';
+            document.getElementById('canvas').getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Function to update the database with new data
+        function updateDatabase() {
+            // Implement your database update logic here
+            alert('Update database functionality not implemented.');
+        }
+
+        // Initialize the model
+        loadModel();
+    </script>
+</body>
+</html>

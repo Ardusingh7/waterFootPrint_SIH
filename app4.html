@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Object Detection with TensorFlow.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #1e90ff;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            border: 2px solid #ddd;
+            margin-top: 20px;
+        }
+
+        #confirm-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        #object-label {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background-color: #1e90ff;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0073e6;
+        }
+
+        #confirm-section button:nth-child(2) {
+            background-color: #f44336;
+        }
+
+        #confirm-section button:nth-child(2):hover {
+            background-color: #d32f2f;
+        }
+
+        #name-input-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #name-input-section label,
+        #name-input-section input {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        #name-input-section input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 50%;
+        }
+
+        #water-section p {
+            font-size: 18px;
+            color: #333;
+        }
+
+        #water-section #water-data {
+            font-weight: bold;
+            color: #1e90ff;
+        }
+
+        #error-message {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Water Footprint Detection</h1>
+    <input type="file" accept="image/*" onchange="loadImage(event)">
+    <canvas id="canvas"></canvas>
+
+    <div id="confirm-section" style="display: none;">
+        <p id="object-label"></p>
+        <button onclick="yesConfirm()">Yes</button>
+        <button onclick="rejectImage()">No</button>
+    </div>
+
+    <!-- Input section for the image name -->
+    <div id="name-input-section" style="display: none;">
+        <label for="image-name">Enter image name:</label>
+        <input type="text" id="image-name" placeholder="Enter image name">
+        <button onclick="retrieveWaterFootprint()">Retrieve water footprint</button>
+    </div>
+
+    <div id="no-options" style="display: none;">
+        <button onclick="rejectImage()">Upload New Image</button>
+        <button onclick="updateDatabase()">Update Water Footprint Data</button>
+    </div>
+
+    <div id="water-section" style="display: none;">
+        <p id="water-data"></p>
+        <p id="error-message"></p>
+    </div>
+
+    <script>
+        let model;
+        let waterFootprintData = {};
+
+        // Load COCO-SSD model when the page loads
+        async function loadModel() {
+            model = await cocoSsd.load();
+            console.log("Model loaded successfully");
+        }
+
+        // Load the water footprint data from the appropriate CSV file
+        async function loadCSVData(csvFile) {
+            const response = await fetch(csvFile);
+            const csvData = await response.text();
+
+            Papa.parse(csvData, {
+                header: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                    results.data.forEach(row => {
+                        waterFootprintData[row.products] = row.water_footprint;
+                    });
+                }
+            });
+        }
+
+        // Load and display the uploaded image
+        function loadImage(event) {
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            const reader = new FileReader();
+
+            reader.onload = function () {
+                const img = new Image();
+                img.onload = function () {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0, img.width, img.height);
+
+                    // Run object detection on the image
+                    detectObjects(img);
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        // Detect objects in the image
+        async function detectObjects(img) {
+            const predictions = await model.detect(img);
+            const context = document.getElementById('canvas').getContext('2d');
+
+            let highestScore = 0;
+            let detectedLabel = '';
+
+            predictions.forEach(prediction => {
+                if (prediction.score > highestScore) {
+                    highestScore = prediction.score;
+                    detectedLabel = prediction.class;
+                }
+
+                if (prediction.score >= 0.8) {
+                    const [x, y, width, height] = prediction.bbox;
+
+                    // Draw bounding box
+                    context.beginPath();
+                    context.rect(x - 2, y - 2, width + 4, height + 4);
+                    context.lineWidth = 3;
+                    context.strokeStyle = 'red';
+                    context.stroke();
+
+                    // Draw label
+                    context.font = '20px Arial';
+                    context.fillStyle = 'red';
+                    const text = `${prediction.class} ${Math.round(prediction.score * 100)}%`;
+                    context.fillText(text, x, y > 20 ? y - 10 : y + 20);
+                }
+            });
+
+            // Check if highest confidence is below 80%
+            if (highestScore < 0.8) {
+                alert('Confidence is less than 80%. Please upload a new image.');
+                document.getElementById('canvas').getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            // Show the detected label prompt
+            showLabelPrompt(detectedLabel);
+        }
+
+        // Show prompt asking if the detected object label is correct
+        function showLabelPrompt(label) {
+            document.getElementById('object-label').textContent = `Is the following "${label}"?`;
+            document.getElementById('confirm-section').style.display = 'flex';
+        }
+
+        // Load the appropriate CSV data based on user's response
+        function yesConfirm() {
+            const csvFile = 'wafoot.csv'; // Load the agriculture-related CSV file
+            loadCSVData(csvFile);
+
+            document.getElementById('confirm-section').style.display = 'none';
+            document.getElementById('name-input-section').style.display = 'block';
+        }
+
+        // Function to reject the image and ask for a new one
+        function rejectImage() {
+            alert('Please upload a new image.');
+            document.getElementById('confirm-section').style.display = 'none';
+            document.getElementById('canvas').getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Retrieve water footprint data based on image name entered by the user
+        function retrieveWaterFootprint() {
+            const objectName = document.getElementById('image-name').value.trim();
+
+            if (objectName) {
+                if (waterFootprintData[objectName]) {
+                    document.getElementById('water-data').textContent = `Water Footprint: ${waterFootprintData[objectName]} liters`;
+                    document.getElementById('error-message').textContent = '';
+                } else {
+                    document.getElementById('water-data').textContent = '';
+                    document.getElementById('error-message').textContent = `No water footprint data found for "${objectName}".`;
+                }
+
+                document.getElementById('water-section').style.display = 'block';
+            } else {
+                alert('Please enter an image name.');
+            }
+        }
+
+        // Function to reject and upload a new image
+        function rejectImage() {
+            document.getElementById('no-options').style.display = 'none';
+            document.getElementById('canvas').getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Function to update the database with new data
+        function updateDatabase() {
+            const objectName = prompt('Enter the name of the object to add or update:');
+            const waterFootprint = prompt('Enter the water footprint value:');
+
+            if (objectName && waterFootprint) {
+                waterFootprintData[objectName] = waterFootprint;
+                alert('Database updated successfully!');
+            } else {
+                alert('Failed to update database. Please provide both the object name and water footprint value.');
+            }
+        }
+
+        // Initialize the model
+        loadModel();
+    </script>
+</body>
+</html>

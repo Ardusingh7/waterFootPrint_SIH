@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Object Detection with TensorFlow.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Water Footprint Detection</h1>
+    <input type="file" accept="image/*" onchange="loadImage(event)">
+    <canvas id="canvas"></canvas>
+
+    <!-- Agriculture question dialog -->
+    <div id="agriculture-question" class="dialog" style="display: none;">
+        <div class="dialog-content">
+            <p>Is this image related to agriculture?</p>
+            <button onclick="handleAgricultureResponse(true)">Yes</button>
+            <button onclick="handleAgricultureResponse(false)">No</button>
+        </div>
+    </div>
+
+    <!-- Confirmation question dialog -->
+    <div id="confirmation-question" class="dialog" style="display: none;">
+        <div class="dialog-content">
+            <p id="question-text"></p>
+            <button onclick="handleUserResponse(true)">Yes</button>
+            <button onclick="handleUserResponse(false)">No</button>
+        </div>
+    </div>
+
+    <div id="confirm-section" style="display: none;">
+        <button onclick="yesConfirm()">Yes</button>
+        <button onclick="showNoOptions()">No</button>
+    </div>
+
+    <!-- Input section for the image name -->
+    <div id="name-input-section" style="display: none;">
+        <label for="image-name">Enter image name:</label>
+        <input type="text" id="image-name" placeholder="Enter image name">
+        <button onclick="retrieveWaterFootprint()">Retrieve water footprint</button>
+    </div>
+
+    <div id="no-options" style="display: none;">
+        <button onclick="rejectImage()">Upload New Image</button>
+        <button onclick="updateDatabase()">Update Water Footprint Data</button>
+    </div>
+
+    <div id="water-section" style="display: none;">
+        <p id="water-data"></p>
+        <p id="error-message"></p>
+    </div>
+
+    <script src="func.js"></script>
+</body>
+</html>

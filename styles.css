@@ -1,0 +1,180 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f7f6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+h1 {
+    color: #1b5e20;
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
+
+input[type="file"] {
+    padding: 12px 20px;
+    border-radius: 30px;
+    border: 2px solid #004d40;
+    background-color: #ffffff;
+    color: #004d40;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+input[type="file"]:hover {
+    background-color: #004d40;
+    color: #ffffff;
+}
+
+canvas {
+    border-radius: 20px;
+    margin-top: 30px;
+    box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+#confirm-section {
+    display: none;
+    margin-top: 30px;
+    gap: 20px;
+}
+
+button {
+    padding: 15px 30px;
+    background-color: #00796b;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+}
+
+button:hover {
+    background-color: #004d40;
+}
+
+#no-options {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 30px;
+}
+
+#no-options button {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 15px;
+}
+
+#name-input-section {
+    display: none;
+    margin-top: 30px;
+    text-align: center;
+}
+
+#name-input-section input {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 30px;
+    border: 2px solid #004d40;
+    outline: none;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 15px;
+}
+
+#name-input-section input:focus {
+    border-color: #00796b;
+}
+
+label {
+    font-size: 18px;
+    color: #004d40;
+    font-weight: 500;
+}
+
+#water-data {
+    font-size: 20px;
+    color: #1b5e20;
+    font-weight: 600;
+}
+
+#error-message {
+    font-size: 18px;
+    color: #d32f2f;
+    margin-top: 15px;
+}
+
+#water-section {
+    display: none;
+    text-align: center;
+    margin-top: 20px;
+}
+/* General styles for dialog boxes */
+.dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 400px; /* Adjusted maximum width */
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2); /* Slightly smaller shadow */
+    z-index: 1000;
+}
+
+.dialog-content {
+    padding: 15px; /* Reduced padding for a more compact appearance */
+    text-align: center;
+}
+
+.dialog p {
+    font-size: 16px; /* Slightly smaller font size */
+    margin-bottom: 15px; /* Reduced margin */
+}
+
+.dialog button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px; /* Adjusted padding for buttons */
+    font-size: 14px; /* Slightly smaller font size */
+    cursor: pointer;
+    margin: 5px;
+    transition: background-color 0.3s;
+}
+
+.dialog button:hover {
+    background-color: #0056b3;
+}
+
+.dialog button:focus {
+    outline: none;
+}
+
+#canvas {
+    display: block;
+    margin: 20px auto;
+}
+
+#confirm-section, #name-input-section, #no-options, #water-section {
+    text-align: center;
+    margin-top: 20px;
+}
